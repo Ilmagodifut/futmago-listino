@@ -1,0 +1,65 @@
+# IL LAVORO CHE RIGENERA IL LISTINO
+#
+# Va in `Ilmagodifut/futmago-listino`, come `.github/workflows/listino.yml`.
+# La copia buona, quella che si modifica, e' questa.
+#
+# ── PERCHE' QUI E NON SUL SITO ────────────────────────────────────────────
+#
+# Perche' fut.gg non risponde piu' ne' a Netlify ne' a Cloudflare (misurato il
+# 20/09/2026: 502 e 403), e perche' ogni pubblicazione sul sito costa 15
+# crediti Netlify. Qui non costa niente e non tocca il sito.
+#
+# ── PERCHE' UN RAMO RIFATTO OGNI VOLTA ────────────────────────────────────
+#
+# Il listino pesa 128 KB per piattaforma e cambia a ogni giro. Tenendone la
+# storia vorrebbe dire far crescere il repository di qualche decina di MB al
+# giorno, per sempre, senza che quella storia serva a nessuno. Il ramo `dati`
+# viene quindi RIFATTO a ogni esecuzione: un commit solo, sempre lo stesso peso.
+
+name: listino
+
+on:
+  schedule:
+    # Ogni quarto d'ora. La fonte pubblica ogni sei minuti circa, ma piu'
+    # spesso di cosi' non porta numeri nuovi che valgano il giro.
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+# Serve solo a spingere sul ramo `dati` di questo stesso repository.
+permissions:
+  contents: write
+
+concurrency:
+  group: listino
+  cancel-in-progress: false
+
+jobs:
+  costruisci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Scarica da fut.gg e componi il listino
+        run: node costruisci-listino.mjs listino
+
+      - name: Pubblica sul ramo dati
+        run: |
+          set -e
+          cd listino
+          git init -q
+          git config user.name  "listino"
+          git config user.email "listino@ilmagodifut.com"
+          git add -A
+          git commit -q -m "listino $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push -q --force \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            HEAD:dati
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Riepilogo
+        run: cat listino/stato.json >> $GITHUB_STEP_SUMMARY
