@@ -1,0 +1,60 @@
+# IL LAVORO CHE AGGIORNA IL CATALOGO DELLA GALLERY
+#
+# CHIESTO l'11/10/2026: gli album devono aggiornarsi da soli. Una volta al
+# giorno rilegge da fut.gg tutti gli album (nuovi album, requisiti, gradi,
+# rarita') e pubblica `catalogo-fc27.json` sul ramo `galleria`. FUTMAGO lo
+# scarica all'avvio; se manca o non e' sano, usa quello che porta con se'.
+#
+# Ramo a parte perche' `dati` viene rifatto da zero ogni quarto d'ora dal
+# lavoro del listino.
+
+name: galleria
+
+on:
+  schedule:
+    # Ogni giorno alle 04:20 UTC, lontano dal quarto d'ora del listino.
+    - cron: '20 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: galleria
+  cancel-in-progress: false
+
+jobs:
+  catalogo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Legge tutti gli album da fut.gg
+        run: node tools/gallery/scarica.mjs
+
+      - name: Compone il catalogo
+        run: |
+          mkdir -p galleria
+          node tools/gallery/genera.mjs --json galleria/catalogo-fc27.json
+
+      - name: Controlla che sia sano
+        run: node tools/gallery/controlla-catalogo.mjs galleria/catalogo-fc27.json
+
+      - name: Pubblica sul ramo galleria
+        run: |
+          set -e
+          cd galleria
+          git init -q
+          git config user.name  "galleria"
+          git config user.email "galleria@ilmagodifut.com"
+          git add -A
+          git commit -q -m "catalogo $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push -q --force \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            HEAD:galleria
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

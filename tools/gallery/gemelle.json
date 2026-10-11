@@ -1,0 +1,101 @@
+{
+  "_perche": [
+    "LE DUE SQUADRE DELLO STESSO CLUB, MASCHILE E FEMMINILE.",
+    "",
+    "SEGNALATO dall'utente il 26/09/2026: nell'album del Real Madrid non",
+    "comparivano le carte della squadra femminile, che invece ci vanno.",
+    "",
+    "Il catalogo di fut.gg non puo' dirlo: sulle sue pagine ogni carta porta il",
+    "club MASCHILE anche quando la giocatrice e' della squadra femminile, e il",
+    "distintivo in cima e' uno solo. L'unico segnale che resta e' la LEGA delle",
+    "carte mostrate: un album che ne mostra due — per esempio 53 e 2222 — accetta",
+    "tutte e due le squadre.",
+    "",
+    "MISURATO il 26/09/2026 chiedendo le carte a EA, un club per volta, con",
+    "`searchConceptItems`: ogni identificativo qui sotto restituisce carte, e le",
+    "restituisce nella lega che ci si aspetta. Non e' una tabella indovinata dai",
+    "nomi — che infatti non bastano: EA chiama «Spurs» il Tottenham femminile,",
+    "«Manchester Utd» lo United, e nella lingua dell'utente l'Amburgo diventa",
+    "«Amburgo».",
+    "",
+    "Si rigenera con `node tools/gallery/scarica.mjs` seguito da",
+    "`node tools/gallery/genera.mjs`. Questa tabella pero' no: va rifatta a mano",
+    "quando EA aggiunge una squadra femminile, e `tests/gallery-club.test.ts`",
+    "avvisa se un album mostra due leghe senza avere la sua coppia qui dentro."
+  ],
+
+  "_maschileVersoFemminile": "L'identificativo maschile e' la chiave: e' quello che il catalogo di fut.gg gia' porta.",
+  "coppie": {
+    "1": 116009,
+    "2": 116015,
+    "5": 116010,
+    "7": 116016,
+    "9": 116343,
+    "10": 116017,
+    "11": 116012,
+    "18": 116011,
+    "1808": 116013,
+
+    "240": 116327,
+    "241": 116325,
+    "243": 116326,
+    "448": 116328,
+    "452": 131733,
+    "457": 116336,
+    "481": 116337,
+
+    "21": 115995,
+    "25": 116002,
+    "28": 132533,
+    "31": 116003,
+    "32": 115996,
+    "36": 132865,
+    "38": 116004,
+    "169": 132866,
+    "1824": 115997,
+    "1831": 132589,
+    "10029": 115999,
+    "112172": 116021,
+
+    "66": 116033,
+    "73": 116034,
+    "76": 131724,
+    "219": 132370,
+    "1738": 116416,
+    "1809": 132831,
+    "111817": 116035
+  },
+
+  "_soloFemminile": [
+    "Album di sole giocatrici in cui fut.gg mette comunque il club maschile,",
+    "perche' e' quello che scrive sulle carte. Qui il club giusto e' UNO, ed e'",
+    "quello femminile: lasciare il maschile riempirebbe l'album di uomini che in",
+    "quell'album non entrano.",
+    "",
+    "Granada CF e' l'unico dedotto e non misurato: la sua pagina su fut.gg non",
+    "mostra carte, ma il club 110832 sta nella seconda divisione spagnola (lega",
+    "54) e questo album sta nello scaffale della LALIGA, dove quel club non",
+    "gioca. La squadra femminile 131391 invece e' nella Liga F (2222), che quello",
+    "scaffale lo compone."
+  ],
+  "soloFemminile": {
+    "19": 116014,
+    "64": 132588,
+    "88": 116019,
+    "89": 132867,
+    "171": 131386,
+    "1799": 131725,
+    "110832": 131391
+  },
+
+  "_femminileVersoMaschile": [
+    "Due album in cui fut.gg aveva messo il distintivo della squadra femminile:",
+    "li' manca il maschile, non il femminile."
+  ],
+  "femminileVersoMaschile": {
+    "115995": 21,
+    "131724": 76
+  },
+
+  "legheFemminili": [2215, 2216, 2218, 2222]
+}
