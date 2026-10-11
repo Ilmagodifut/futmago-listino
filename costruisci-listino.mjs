@@ -67,7 +67,7 @@ function numeri(v) {
  * indovina: si taglia alla piu' corta, perche' un disallineamento vorrebbe
  * dire prezzi veri sotto carte sbagliate.
  */
-function unisci(indice, dinamici, fermi) {
+function unisci(indice, dinamici, fermi, stati) {
   const differenze = numeri(indice['d']);
   const quante = Math.min(
     differenze.length + 1,
@@ -77,7 +77,22 @@ function unisci(indice, dinamici, fermi) {
   let usatiDinamici = 0;
   let usatiFermi = 0;
   let senzaPrezzo = 0;
+  /*
+   * LE CARTE CHE IL MERCATO NON VENDE. SEGNALATO l'11/10/2026: FUTMAGO
+   * proponeva di comprare Frattesi SBC a 40k, Kaptein obiettivi, le Elvedi
+   * FUT Champions. fut.gg da' a ogni carta uno stato (`s`): 0 e' il mercato;
+   * 1 le SBC, col costo della sfida al posto del prezzo; 2 e 3 obiettivi e
+   * premi, senza prezzo. Si pubblicano gli identificativi con stato diverso
+   * da 0 in `n`: chi non lo conosce lo ignora.
+   */
+  const fuoriMercato = [];
+  let identificativo = Number(indice['id0']);
   for (let i = 0; i < quante; i++) {
+    if (i > 0) identificativo += Number(differenze[i - 1]);
+    const stato = numeri(stati)[i];
+    if (typeof stato === 'number' && stato !== 0 && Number.isFinite(identificativo)) {
+      fuoriMercato.push(identificativo);
+    }
     const d = numeri(dinamici)[i];
     const f = numeri(fermi)[i];
     if (typeof d === 'number' && Number.isFinite(d) && d > 0) {
@@ -98,8 +113,9 @@ function unisci(indice, dinamici, fermi) {
       id0: indice['id0'],
       d: differenze.slice(0, Math.max(0, quante - 1)),
       p: prezzi,
+      n: fuoriMercato,
     },
-    conti: { carte: quante, usatiDinamici, usatiFermi, senzaPrezzo },
+    conti: { carte: quante, usatiDinamici, usatiFermi, senzaPrezzo, fuoriMercato: fuoriMercato.length },
   };
 }
 
@@ -120,12 +136,14 @@ for (const [nome, chiave] of Object.entries(PIATTAFORME)) {
     /* Senza i dinamici si pubblica lo stesso, con i prezzi fermi. */
     console.log(`  ${nome}: niente -dyn (${errore.message})`);
   }
-  const { documento, conti } = unisci(indice, dinamici['p'], fermi['p']);
+  const stati = numeri(fermi['s']).length > 0 ? fermi['s'] : dinamici['s'];
+  const { documento, conti } = unisci(indice, dinamici['p'], fermi['p'], stati);
   writeFileSync(path.join(destinazione, `listino-${nome}.json`), JSON.stringify(documento));
   riepilogo.piattaforme[nome] = conti;
   console.log(
     `  ${nome}: ${conti.carte} carte, ${conti.usatiDinamici} dal -dyn, ` +
-      `${conti.usatiFermi} dal file fermo, ${conti.senzaPrezzo} senza prezzo`,
+      `${conti.usatiFermi} dal file fermo, ${conti.senzaPrezzo} senza prezzo, ` +
+      `${conti.fuoriMercato} fuori mercato`,
   );
 }
 
