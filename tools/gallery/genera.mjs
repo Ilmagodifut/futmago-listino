@@ -24,7 +24,16 @@ function protetto(testo) {
   return String(testo).split('\\').join('\\\\').split("'").join("\\'");
 }
 
-const catalogo = JSON.parse(readFileSync('tools/gallery/gallery-fc27.json', 'utf8'));
+/*
+ * Album che FUTMAGO non mostra. POTM: DECISO dall'utente l'11/10/2026, «sono
+ * tutti SBC, puoi anche non metterlo» — e su fut.gg non ha nemmeno il numero
+ * di carte richieste.
+ */
+const ESCLUSI = new Set(['/fut-gallery/rarities/potm/']);
+
+const catalogo = JSON.parse(readFileSync('tools/gallery/gallery-fc27.json', 'utf8')).filter(
+  (set) => !ESCLUSI.has(set.id),
+);
 const gemelle = JSON.parse(readFileSync('tools/gallery/gemelle.json', 'utf8'));
 
 /**
@@ -100,6 +109,38 @@ const senzaCoppia = [];
 function clubDelSet(set) {
   const uno = Number(set.club) || 0;
   if (uno === 0) return [];
+
+  /*
+   * ── PRIMA DI TUTTO, IL REQUISITO DI EA ─────────────────────────────────
+   *
+   * SEGNALATO il 13/10/2026: il West Ham accetta solo la squadra femminile, e
+   * FUTMAGO proponeva anche i maschili. Il requisito lo scrive (`genere`, da
+   * `scarica.mjs`): «Women's», «Mens» o «Mens or Womens». Quando c'e' decide
+   * lui; le leghe qui sotto restano solo per una pagina che non lo dicesse.
+   */
+  const maschileDi = (id) => gemelle.femminileVersoMaschile[String(id)] ?? id;
+  const femminileDi = (id) => {
+    const m = maschileDi(id);
+    return COPPIA.get(m) ?? gemelle.soloFemminile[String(m)] ?? (m !== id ? id : undefined);
+  };
+  if (set.genere === 'uomini') return [maschileDi(uno)];
+  if (set.genere === 'donne') {
+    const f = femminileDi(uno);
+    /* Un club che esiste solo come squadra femminile (London City, Wolfsburg) ha gia' l'id giusto. */
+    if (f !== undefined) return [f];
+    const tuttiFemminili = new Set([...COPPIA.values(), ...Object.values(gemelle.soloFemminile)]);
+    if (!tuttiFemminili.has(uno) && (set.leghe ?? []).some((l) => !gemelle.legheFemminili.includes(l))) {
+      senzaCoppia.push(`${set.nome} (club ${uno}): solo donne, ma la squadra femminile non e' in gemelle.json`);
+    }
+    return [uno];
+  }
+  if (set.genere === 'entrambi') {
+    const m = maschileDi(uno);
+    const f = COPPIA.get(m);
+    if (f !== undefined) return [m, f].sort((a, b) => a - b);
+    senzaCoppia.push(`${set.nome} (club ${uno}): uomini e donne, ma la coppia non e' in gemelle.json`);
+    return [m];
+  }
 
   const leghe = set.leghe ?? [];
   const femminili = new Set(gemelle.legheFemminili);

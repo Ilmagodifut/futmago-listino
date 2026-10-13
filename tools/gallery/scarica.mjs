@@ -187,7 +187,34 @@ function leggiSet(htmlIntero, percorso, categoria) {
    */
   const rarita = raritaDelRequisito(t);
 
-  return { id: percorso, nome, categoria, club, lega, leghe, richieste, ...(rarita.length > 0 ? { rarita } : {}), gradi };
+  /*
+   * ── UOMINI, DONNE O ENTRAMBI: LO DICE IL REQUISITO ────────────────────────
+   *
+   * SEGNALATO il 13/10/2026: nell'album del West Ham FUTMAGO proponeva anche
+   * i giocatori maschili, ma il gioco accetta solo la squadra femminile.
+   *
+   * Le leghe delle carte mostrate (`leghe`) dicono cosa e' USCITO, non cosa
+   * l'album accetta. Il requisito invece e' il testo di EA, e lo dice chiaro:
+   * «Requires 15 West Ham Women's players», «Requires 15 Crystal Palace Mens
+   * players», «Requires 20 Arsenal Mens or Womens players». CONTROLLATO su
+   * tutti i centodieci album di club: sei erano sbagliati (West Ham,
+   * Birmingham, Charlton, Norimberga solo donne; Crystal Palace e Lens solo
+   * uomini).
+   */
+  const genere = genereDelRequisito(t);
+
+  return { id: percorso, nome, categoria, club, lega, leghe, richieste, ...(genere ? { genere } : {}), ...(rarita.length > 0 ? { rarita } : {}), gradi };
+}
+
+/** 'entrambi' | 'donne' | 'uomini', oppure null se il requisito non lo dice. */
+function genereDelRequisito(t) {
+  const frase = /Requires\s+[\d,]+\s+([^\n]+?)\s+players\b/.exec(t);
+  if (frase === null) return null;
+  const chi = frase[1];
+  if (/\bMen'?s\s+(?:or|and)\s+Women'?s$/i.test(chi)) return 'entrambi';
+  if (/\bWomen'?s$/i.test(chi)) return 'donne';
+  if (/\bMen'?s$/i.test(chi)) return 'uomini';
+  return null;
 }
 
 /** Nome della rarita' (fut.gg, in minuscolo) -> identificativo EA. Lo riempie `principale`. */
