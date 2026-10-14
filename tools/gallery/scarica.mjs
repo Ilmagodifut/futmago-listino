@@ -36,12 +36,19 @@ const PAUSA_MS = 350;
 
 const aspetta = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/*
+ * Tre tentativi. MISURATO il 15/10/2026: la Juventus ha risposto 502 una
+ * volta, e un album saltato sparisce dal catalogo di tutti fino al giorno dopo.
+ */
 async function pagina(percorso) {
-  const risposta = await fetch(RADICE + percorso, {
-    headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
-  });
-  if (!risposta.ok) throw new Error(`${percorso}: ${risposta.status}`);
-  return risposta.text();
+  for (let tentativo = 1; ; tentativo++) {
+    const risposta = await fetch(RADICE + percorso, {
+      headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+    });
+    if (risposta.ok) return risposta.text();
+    if (tentativo >= 3) throw new Error(`${percorso}: ${risposta.status}`);
+    await aspetta(3000 * tentativo);
+  }
 }
 
 /** Il testo di un frammento di HTML, senza tag e senza spazi doppi. */
@@ -203,7 +210,31 @@ function leggiSet(htmlIntero, percorso, categoria) {
    */
   const genere = genereDelRequisito(t);
 
-  return { id: percorso, nome, categoria, club, lega, leghe, richieste, ...(genere ? { genere } : {}), ...(rarita.length > 0 ? { rarita } : {}), gradi };
+  /*
+   * ── E I NUMERI DELLE DUE SQUADRE, DALLE CARTE DELLA PAGINA ───────────────
+   *
+   * CHIESTO il 13/10/2026: «questa modifica si dovra' applicare anche ai
+   * nuovi album». Il requisito dice uomini o donne, ma non il numero EA della
+   * squadra femminile: per i club che conosciamo lo dice `gemelle.json`, per un
+   * album nuovo no. La pagina pero' porta la formazione proposta da fut.gg,
+   * carta per carta, con `gender` (1 uomo, 2 donna) e `clubEaId`. Da li' il
+   * numero si legge da solo, e `genera.mjs` lo usa quando la tabella non lo sa.
+   */
+  const formazione = htmlIntero.slice(Math.max(0, htmlIntero.indexOf('solution:')));
+  const clubDi = (g) => [
+    ...new Set([...formazione.matchAll(new RegExp(`gender:${g},clubEaId:(\\d+)`, 'g'))].map((m) => Number(m[1]))),
+  ];
+  const clubUomini = clubDi(1);
+  const clubDonne = clubDi(2);
+
+  return {
+    id: percorso, nome, categoria, club, lega, leghe, richieste,
+    ...(genere ? { genere } : {}),
+    ...(clubUomini.length > 0 ? { clubUomini } : {}),
+    ...(clubDonne.length > 0 ? { clubDonne } : {}),
+    ...(rarita.length > 0 ? { rarita } : {}),
+    gradi,
+  };
 }
 
 /** 'entrambi' | 'donne' | 'uomini', oppure null se il requisito non lo dice. */

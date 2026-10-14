@@ -123,11 +123,19 @@ function clubDelSet(set) {
     const m = maschileDi(id);
     return COPPIA.get(m) ?? gemelle.soloFemminile[String(m)] ?? (m !== id ? id : undefined);
   };
-  if (set.genere === 'uomini') return [maschileDi(uno)];
+  if (set.genere === 'uomini') {
+    /* Il distintivo puo' essere della squadra femminile: le carte dicono quella maschile. */
+    const m = maschileDi(uno);
+    const femminiliNote = new Set([...COPPIA.values(), ...Object.values(gemelle.soloFemminile)]);
+    if (femminiliNote.has(m) && set.clubUomini?.length === 1) return [set.clubUomini[0]];
+    return [m];
+  }
   if (set.genere === 'donne') {
     const f = femminileDi(uno);
     /* Un club che esiste solo come squadra femminile (London City, Wolfsburg) ha gia' l'id giusto. */
     if (f !== undefined) return [f];
+    /* Album nuovo, coppia sconosciuta: il numero lo dicono le carte della pagina. */
+    if (set.clubDonne?.length === 1) return [set.clubDonne[0]];
     const tuttiFemminili = new Set([...COPPIA.values(), ...Object.values(gemelle.soloFemminile)]);
     if (!tuttiFemminili.has(uno) && (set.leghe ?? []).some((l) => !gemelle.legheFemminili.includes(l))) {
       senzaCoppia.push(`${set.nome} (club ${uno}): solo donne, ma la squadra femminile non e' in gemelle.json`);
@@ -135,8 +143,10 @@ function clubDelSet(set) {
     return [uno];
   }
   if (set.genere === 'entrambi') {
-    const m = maschileDi(uno);
-    const f = COPPIA.get(m);
+    /* Bayern e Strasburgo hanno lo stemma femminile: se la tabella non lo sa, lo dicono le carte. */
+    let m = maschileDi(uno);
+    if ((set.clubDonne ?? []).includes(m) && set.clubUomini?.length === 1) m = set.clubUomini[0];
+    const f = COPPIA.get(m) ?? (set.clubDonne?.length === 1 ? set.clubDonne[0] : undefined);
     if (f !== undefined) return [m, f].sort((a, b) => a - b);
     senzaCoppia.push(`${set.nome} (club ${uno}): uomini e donne, ma la coppia non e' in gemelle.json`);
     return [m];
