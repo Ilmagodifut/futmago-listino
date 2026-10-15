@@ -79,8 +79,29 @@ async function indirizzoDeiSet() {
   for (const categoria of categorie) {
     await aspetta(PAUSA_MS);
     const html = await pagina(categoria);
+    const linkati = [];
     for (const m of html.matchAll(/href="(\/fut-gallery\/[a-z0-9-]+\/[a-z0-9-]+\/)"/g)) {
+      linkati.push(m[1]);
       if (!set.has(m[1])) set.set(m[1], categoria);
+    }
+    /*
+     * ── ANCHE I SET CHE LA PAGINA NON LINKA ───────────────────────────────
+     *
+     * TROVATO il 15/10/2026 confrontando con FUTGenie (128 set, noi 126):
+     * la pagina della LaLiga mostra 24 link, ma nei suoi dati ci sono anche
+     * SD Eibar e Granada CF. Si leggono dai dati (`categoryId`, `slug`), solo
+     * quelli della stessa categoria dei set linkati.
+     */
+    const categoriaDi = new Map();
+    for (const m of html.matchAll(/categoryId:(\d+),name:"(?:[^"\\]|\\.)*",slug:"([a-z0-9-]+)"/g)) {
+      categoriaDi.set(m[2], m[1]);
+    }
+    const qui = new Set(
+      linkati.map((l) => categoriaDi.get(l.split('/').filter(Boolean).pop())).filter((c) => c !== undefined),
+    );
+    for (const [slug, cid] of categoriaDi) {
+      const percorso = `${categoria}${slug}/`;
+      if (qui.has(cid) && !set.has(percorso)) set.set(percorso, categoria);
     }
     process.stderr.write(`${categoria} -> ${set.size} set finora\n`);
   }
