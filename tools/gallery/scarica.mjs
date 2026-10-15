@@ -41,12 +41,19 @@ const aspetta = (ms) => new Promise((r) => setTimeout(r, ms));
  * volta, e un album saltato sparisce dal catalogo di tutti fino al giorno dopo.
  */
 async function pagina(percorso) {
+  /* Anche la connessione caduta («fetch failed»): TROVATO il 16/10/2026 su SD Eibar. */
   for (let tentativo = 1; ; tentativo++) {
-    const risposta = await fetch(RADICE + percorso, {
-      headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
-    });
-    if (risposta.ok) return risposta.text();
-    if (tentativo >= 3) throw new Error(`${percorso}: ${risposta.status}`);
+    let motivo;
+    try {
+      const risposta = await fetch(RADICE + percorso, {
+        headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+      });
+      if (risposta.ok) return await risposta.text();
+      motivo = String(risposta.status);
+    } catch (errore) {
+      motivo = errore instanceof Error ? errore.message : String(errore);
+    }
+    if (tentativo >= 3) throw new Error(`${percorso}: ${motivo}`);
     await aspetta(3000 * tentativo);
   }
 }
