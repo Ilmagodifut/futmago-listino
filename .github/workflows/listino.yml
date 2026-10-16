@@ -18,10 +18,20 @@
 
 name: listino
 
+# ── PERCHE' UN GIRO LUNGO E NON UN GIRO OGNI QUARTO D'ORA ──────────────────
+#
+# MISURATO il 16/10/2026: il cron «ogni 15 minuti» GitHub lo esegue quando
+# puo', cioe' ogni 3-6 ore (oggi 04:32, 09:32, 14:44, 18:58). Le carte uscite
+# alle 19:00 non avevano un prezzo, e FUTMAGO le dava per «estinte».
+#
+# Ora ogni esecuzione resta accesa quasi sei ore (il massimo di GitHub) e
+# rigenera il listino ogni quarto d'ora da sola. Quando GitHub fa partire
+# l'esecuzione successiva, quella vecchia si chiude (`cancel-in-progress`) e
+# la nuova prosegue: il listino resta fresco senza buchi. Il repository e'
+# pubblico, quindi i minuti non costano niente.
+
 on:
   schedule:
-    # Ogni quarto d'ora. La fonte pubblica ogni sei minuti circa, ma piu'
-    # spesso di cosi' non porta numeri nuovi che valgano il giro.
     - cron: '*/15 * * * *'
   workflow_dispatch:
 
@@ -31,11 +41,12 @@ permissions:
 
 concurrency:
   group: listino
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   costruisci:
     runs-on: ubuntu-latest
+    timeout-minutes: 355
     steps:
       - uses: actions/checkout@v4
 
@@ -43,23 +54,34 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Scarica da fut.gg e componi il listino
-        run: node costruisci-listino.mjs listino
-
-      - name: Pubblica sul ramo dati
+      - name: Listino ogni quarto d'ora, per quasi sei ore
         run: |
-          set -e
-          cd listino
-          git init -q
-          git config user.name  "listino"
-          git config user.email "listino@ilmagodifut.com"
-          git add -A
-          git commit -q -m "listino $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          git push -q --force \
-            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
-            HEAD:dati
+          inizio=$(date +%s)
+          giro=0
+          # 22 giri da 15 minuti = 5 ore e mezza, sotto il limite di 6.
+          while [ $giro -lt 22 ]; do
+            giro=$((giro + 1))
+            partenza=$(date +%s)
+            echo "── giro $giro ($(date -u +%H:%M:%SZ))"
+            rm -rf listino
+            if node costruisci-listino.mjs listino; then
+              (
+                set -e
+                cd listino
+                git init -q
+                git config user.name  "listino"
+                git config user.email "listino@ilmagodifut.com"
+                git add -A
+                git commit -q -m "listino $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                git push -q --force                   "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"                   HEAD:dati
+              ) && cat listino/stato.json || echo "pubblicazione fallita, riprovo al prossimo giro"
+            else
+              echo "fut.gg non ha risposto, riprovo al prossimo giro"
+            fi
+            # Un giro in piu' solo se resta tempo per farlo intero.
+            [ $(( $(date +%s) - inizio )) -gt $((5 * 3600 + 20 * 60)) ] && break
+            attesa=$(( 900 - ( $(date +%s) - partenza ) ))
+            [ $attesa -gt 0 ] && sleep $attesa
+          done
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Riepilogo
-        run: cat listino/stato.json >> $GITHUB_STEP_SUMMARY
