@@ -35,9 +35,10 @@ on:
     - cron: '*/15 * * * *'
   workflow_dispatch:
 
-# Serve solo a spingere sul ramo `dati` di questo stesso repository.
+# Spingere sul ramo `dati`, e far ripartire questo stesso lavoro (vedi sotto).
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: listino
@@ -85,3 +86,17 @@ jobs:
           done
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── E QUANDO FINISCE, O LO FERMANO, RIPARTE DA SOLO ──────────────────
+      #
+      # SUCCESSO il 17/10/2026: alle 15:17 GitHub ha spento la macchina a
+      # meta' giro (codice 143), e nessun altro lavoro era acceso: i prezzi si
+      # sarebbero fermati per ore, fino al prossimo cron. Ora, se il giro
+      # finisce bene o viene ucciso, se ne fa partire subito un altro.
+      # Non quando e' «cancellato»: vuol dire che ne e' gia' partito uno
+      # nuovo, e farne un terzo li moltiplicherebbe.
+      - name: Fa ripartire il listino
+        if: ${{ !cancelled() }}
+        run: gh workflow run listino.yml --repo "$GITHUB_REPOSITORY" --ref main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
