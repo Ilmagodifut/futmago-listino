@@ -1,0 +1,20 @@
+{
+  "anno": "27",
+  "quando": "2026-10-17T22:05:41.512Z",
+  "piattaforme": {
+    "console": {
+      "carte": 20630,
+      "usatiDinamici": 20245,
+      "usatiFermi": 7,
+      "senzaPrezzo": 378,
+      "fuoriMercato": 118
+    },
+    "pc": {
+      "carte": 20630,
+      "usatiDinamici": 20050,
+      "usatiFermi": 16,
+      "senzaPrezzo": 564,
+      "fuoriMercato": 118
+    }
+  }
+}
