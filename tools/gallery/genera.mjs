@@ -110,6 +110,21 @@ for (const [maschile, femminile] of Object.entries(gemelle.soloFemminile)) {
 
 const senzaCoppia = [];
 
+/*
+ * ── LA LEGA DEGLI SCAFFALI NUOVI ──────────────────────────────────────────
+ *
+ * SEGNALATO il 22/10/2026: gli scaffali MLS, ROSHN e NWSL senza logo. Il
+ * logo di uno scaffale che FUTMAGO non conosce viene dalla lega dei suoi
+ * album, e un album di club la lega non ce l'ha. Gliela si da' qui: l'album
+ * di club cerca le carte per club, la lega non cambia cosa contiene.
+ */
+const LEGA_DELLO_SCAFFALE = {
+  '/fut-gallery/mls/': 39,
+  '/fut-gallery/roshn-saudi-league/': 350,
+  '/fut-gallery/national-women-s-soccer-league/': 2221,
+};
+const legaDi = (set) => set.lega || LEGA_DELLO_SCAFFALE[set.categoria] || 0;
+
 function clubDelSet(set) {
   const uno = Number(set.club) || 0;
   if (uno === 0) return [];
@@ -188,7 +203,7 @@ const righe = catalogo.map((set) => {
   const categoria = NOMI_CATEGORIA[set.categoria] ?? set.categoria;
   return (
     `  { id: '${id}', nome: '${protetto(set.nome)}', categoria: '${protetto(categoria)}', ` +
-    `clubs: [${clubDelSet(set).join(', ')}], lega: ${set.lega}, richieste: ${set.richieste}, ` +
+    `clubs: [${clubDelSet(set).join(', ')}], lega: ${legaDi(set)}, richieste: ${set.richieste}, ` +
     (Array.isArray(set.rarita) && set.rarita.length > 0 ? `rarita: [${set.rarita.join(', ')}], ` : '') +
     `gradi: [${gradi}] },`
   );
@@ -210,7 +225,7 @@ if (comeDati >= 0) {
     nome: set.nome,
     categoria: NOMI_CATEGORIA[set.categoria] ?? set.categoria,
     clubs: clubDelSet(set),
-    lega: set.lega,
+    lega: legaDi(set),
     richieste: set.richieste,
     ...(Array.isArray(set.rarita) && set.rarita.length > 0 ? { rarita: set.rarita } : {}),
     gradi: set.gradi.map((g) => ({ lettera: g.lettera, soglia: g.soglia, premio: g.premio })),
