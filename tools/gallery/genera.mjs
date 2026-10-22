@@ -15,6 +15,10 @@ const NOMI_CATEGORIA = {
   '/fut-gallery/bundesliga/': 'Bundesliga / Frauen-Bundesliga',
   '/fut-gallery/ligue-1/': "Ligue 1 McDonald's / Arkema PL",
   '/fut-gallery/serie-a/': 'Serie A Enilive',
+  /* Season 2, dal 22/10/2026. */
+  '/fut-gallery/mls/': 'MLS',
+  '/fut-gallery/roshn-saudi-league/': 'ROSHN Saudi League',
+  '/fut-gallery/national-women-s-soccer-league/': 'NWSL',
   '/fut-gallery/leagues/': 'Leghe',
   '/fut-gallery/rarities/': 'Rarita',
 };
