@@ -150,8 +150,8 @@ function leggiSet(htmlIntero, percorso, categoria) {
    * L'identificativo EA: sta nell'indirizzo dell'immagine dello stemma. Un
    * set di club porta `2027/club/<id>`, uno di lega `2027/league/<id>`.
    */
-  const club = Number((/2027\/club\/(\d+)\./.exec(html) ?? [])[1] ?? 0);
-  const lega = Number((/2027\/league\/(\d+)\./.exec(html) ?? [])[1] ?? 0);
+  let club = Number((/2027\/club\/(\d+)\./.exec(html) ?? [])[1] ?? 0);
+  let lega = Number((/2027\/league\/(\d+)\./.exec(html) ?? [])[1] ?? 0);
 
   /*
    * ── TUTTE LE LEGHE, NON SOLO LA PRIMA ──────────────────────────────────
@@ -255,6 +255,33 @@ function leggiSet(htmlIntero, percorso, categoria) {
   const clubUomini = clubDi(1);
   const clubDonne = clubDi(2);
 
+  /*
+   * ── SENZA STEMMA, IL NUMERO LO DICONO LE CARTE ──────────────────────────
+   *
+   * TROVATO il 22/10/2026: i 66 album nuovi di Season 2 (MLS, NWSL, ROSHN e
+   * le loro squadre) sono arrivati su fut.gg senza l'immagine dello stemma, e
+   * sono entrati nel catalogo con club 0 e lega 0: FUTMAGO li scarta, perche'
+   * un album che non filtra niente conterrebbe tutte le carte. Le carte della
+   * formazione proposta portano `clubEaId` e `leagueEaId`: il piu' frequente
+   * e' quello dell'album (Inter Miami: 112893, MLS: 39).
+   */
+  const piuFrequente = (chiave) => {
+    const conta = new Map();
+    for (const m of formazione.matchAll(new RegExp(`${chiave}:(\\d+)`, 'g'))) conta.set(m[1], (conta.get(m[1]) ?? 0) + 1);
+    let meglio = 0;
+    let volte = 0;
+    for (const [id, n] of conta) if (n > volte) [meglio, volte] = [Number(id), n];
+    return meglio;
+  };
+  if (club === 0 && lega === 0 && rarita.length === 0 && categoria !== '/fut-gallery/rarities/') {
+    if (categoria === '/fut-gallery/leagues/') {
+      lega = piuFrequente('leagueEaId');
+      if (lega > 0 && !leghe.includes(lega)) leghe.push(lega);
+    } else {
+      club = piuFrequente('clubEaId');
+    }
+  }
+
   return {
     id: percorso, nome, categoria, club, lega, leghe, richieste,
     ...(genere ? { genere } : {}),
@@ -270,9 +297,10 @@ function genereDelRequisito(t) {
   const frase = /Requires\s+[\d,]+\s+([^\n]+?)\s+players\b/.exec(t);
   if (frase === null) return null;
   const chi = frase[1];
-  if (/\bMen'?s\s+(?:or|and)\s+Women'?s$/i.test(chi)) return 'entrambi';
-  if (/\bWomen'?s$/i.test(chi)) return 'donne';
-  if (/\bMen'?s$/i.test(chi)) return 'uomini';
+  /* «Women» senza la s: le squadre NWSL, dal 22/10/2026 («Angel City FC Women players»). */
+  if (/\bMen(?:'?s)?\s+(?:or|and)\s+Women(?:'?s)?$/i.test(chi)) return 'entrambi';
+  if (/\bWomen(?:'?s)?$/i.test(chi)) return 'donne';
+  if (/\bMen(?:'?s)?$/i.test(chi)) return 'uomini';
   return null;
 }
 
