@@ -93,10 +93,20 @@ jobs:
       # meta' giro (codice 143), e nessun altro lavoro era acceso: i prezzi si
       # sarebbero fermati per ore, fino al prossimo cron. Ora, se il giro
       # finisce bene o viene ucciso, se ne fa partire subito un altro.
-      # Non quando e' «cancellato»: vuol dire che ne e' gia' partito uno
-      # nuovo, e farne un terzo li moltiplicherebbe.
+      #
+      # SUCCESSO di nuovo il 29/10/2026 alle 03:52 UTC: GitHub, spegnendo la
+      # macchina, ha segnato il lavoro come «cancellato», e con `!cancelled()`
+      # il riavvio e' stato saltato. Ora parte sempre, e si guarda prima se un
+      # altro listino e' gia' acceso: se c'e' (e' quello che ci ha sostituito),
+      # non se ne fa partire un terzo.
       - name: Fa ripartire il listino
-        if: ${{ !cancelled() }}
-        run: gh workflow run listino.yml --repo "$GITHUB_REPOSITORY" --ref main
+        if: ${{ always() }}
+        run: |
+          altri=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow listino.yml --json databaseId,status             --jq "[.[] | select(.databaseId != ${GITHUB_RUN_ID} and (.status == \"in_progress\" or .status == \"queued\" or .status == \"pending\"))] | length")
+          if [ "${altri:-0}" -gt 0 ]; then
+            echo "C'e' gia' un listino acceso: non ne parte un altro"
+          else
+            gh workflow run listino.yml --repo "$GITHUB_REPOSITORY" --ref main
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
