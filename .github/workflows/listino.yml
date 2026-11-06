@@ -55,12 +55,13 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Listino ogni quarto d'ora, per quasi sei ore
+      - name: Listino ogni cinque minuti, per quasi sei ore
         run: |
           inizio=$(date +%s)
           giro=0
-          # 22 giri da 15 minuti = 5 ore e mezza, sotto il limite di 6.
-          while [ $giro -lt 22 ]; do
+          # CHIESTO il 06/11/2026: ogni 5 minuti invece di 15 (prezzi piu' freschi).
+          # 66 giri da 5 minuti = 5 ore e mezza, sotto il limite di 6.
+          while [ $giro -lt 66 ]; do
             giro=$((giro + 1))
             partenza=$(date +%s)
             echo "── giro $giro ($(date -u +%H:%M:%SZ))"
@@ -80,8 +81,8 @@ jobs:
               echo "fut.gg non ha risposto, riprovo al prossimo giro"
             fi
             # Un giro in piu' solo se resta tempo per farlo intero.
-            [ $(( $(date +%s) - inizio )) -gt $((5 * 3600 + 20 * 60)) ] && break
-            attesa=$(( 900 - ( $(date +%s) - partenza ) ))
+            [ $(( $(date +%s) - inizio )) -gt $((5 * 3600 + 30 * 60)) ] && break
+            attesa=$(( 300 - ( $(date +%s) - partenza ) ))
             [ $attesa -gt 0 ] && sleep $attesa
           done
         env:
