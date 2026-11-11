@@ -55,34 +55,43 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Listino ogni cinque minuti, per quasi sei ore
+      - name: Listino appena fut.gg aggiorna, per quasi sei ore
         run: |
+          # CHIESTO l'11/11/2026: prezzi delle Icon aggiornati «ogni minuto».
+          # fut.gg pubblica i prezzi in blocco ogni 5-10 minuti (misurato): si
+          # guarda il suo manifesto ogni minuto e si rifa' il listino appena
+          # cambia, o comunque ogni 5 minuti. Cosi' arriva entro un minuto.
           inizio=$(date +%s)
+          ultimo=""
+          ultima_costruzione=0
           giro=0
-          # CHIESTO il 06/11/2026: ogni 5 minuti invece di 15 (prezzi piu' freschi).
-          # 66 giri da 5 minuti = 5 ore e mezza, sotto il limite di 6.
-          while [ $giro -lt 66 ]; do
+          while true; do
             giro=$((giro + 1))
             partenza=$(date +%s)
-            echo "── giro $giro ($(date -u +%H:%M:%SZ))"
-            rm -rf listino
-            if node costruisci-listino.mjs listino; then
-              (
-                set -e
-                cd listino
-                git init -q
-                git config user.name  "listino"
-                git config user.email "listino@ilmagodifut.com"
-                git add -A
-                git commit -q -m "listino $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-                git push -q --force                   "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"                   HEAD:dati
-              ) && cat listino/stato.json || echo "pubblicazione fallita, riprovo al prossimo giro"
-            else
-              echo "fut.gg non ha risposto, riprovo al prossimo giro"
+            pubblicato=$(curl -s --max-time 20 https://r2.fut.gg/27/manifest.json               | node -e "let t='';process.stdin.on('data',d=>t+=d).on('end',()=>{try{const m=JSON.parse(t);console.log(m['player-prices-ps5-dyn']+'/'+m['player-prices-pc-dyn'])}catch{console.log('')}})")
+            if [ -n "$pubblicato" ] && { [ "$pubblicato" != "$ultimo" ] || [ $((partenza - ultima_costruzione)) -ge 300 ]; }; then
+              echo "── giro $giro ($(date -u +%H:%M:%SZ)) fut.gg $pubblicato"
+              rm -rf listino
+              if node costruisci-listino.mjs listino; then
+                # Lo storico delle Icon e' un passo a parte: se fallisce, il listino esce lo stesso.
+                node storico-icon.mjs listino icon-24h-prec.json || echo "storico icon saltato"
+                (
+                  set -e
+                  cd listino
+                  git init -q
+                  git config user.name  "listino"
+                  git config user.email "listino@ilmagodifut.com"
+                  git add -A
+                  git commit -q -m "listino $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                  git push -q --force                     "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"                     HEAD:dati
+                ) && { cat listino/stato.json; ultimo="$pubblicato"; ultima_costruzione=$partenza;                        [ -f listino/icon-24h.json ] && cp listino/icon-24h.json icon-24h-prec.json; }                   || echo "pubblicazione fallita, riprovo al prossimo giro"
+              else
+                echo "fut.gg non ha risposto, riprovo al prossimo giro"
+              fi
             fi
             # Un giro in piu' solo se resta tempo per farlo intero.
             [ $(( $(date +%s) - inizio )) -gt $((5 * 3600 + 30 * 60)) ] && break
-            attesa=$(( 300 - ( $(date +%s) - partenza ) ))
+            attesa=$(( 60 - ( $(date +%s) - partenza ) ))
             [ $attesa -gt 0 ] && sleep $attesa
           done
         env:
