@@ -80,7 +80,22 @@ async function indirizzoDeiSet() {
     ...new Set(
       [...indice.matchAll(/href="(\/fut-gallery\/[a-z0-9-]+\/)"/g)].map((m) => m[1]),
     ),
-  ].filter((c) => c !== '/fut-gallery/' && !c.includes('/tags/'));
+  ].filter((c) => c !== '/fut-gallery/' && !c.includes('/tags/') && !c.includes('/changelog/'));
+
+  /*
+   * ── LA CATEGORIA SI LEGGE DALL'INDIRIZZO DEL SET ───────────────────────
+   *
+   * SEGNALATO l'11/11/2026: sull'iPhone uno scaffale «/fut-gallery/changelog/»
+   * con 15 album. fut.gg ha aggiunto una pagina «changelog» che linka i set
+   * appena cambiati: visitata per prima, si prendeva quei set come suoi, e
+   * perdevano anche la lega. La categoria di un set e' il primo pezzo del suo
+   * indirizzo (`/fut-gallery/serie-a/juventus/` -> `/fut-gallery/serie-a/`),
+   * chiunque lo linki.
+   */
+  const categoriaDelSet = (percorso, ripiego) => {
+    const pezzi = percorso.split('/').filter(Boolean);
+    return pezzi.length >= 3 ? `/${pezzi[0]}/${pezzi[1]}/` : ripiego;
+  };
 
   const set = new Map();
   for (const categoria of categorie) {
@@ -89,7 +104,7 @@ async function indirizzoDeiSet() {
     const linkati = [];
     for (const m of html.matchAll(/href="(\/fut-gallery\/[a-z0-9-]+\/[a-z0-9-]+\/)"/g)) {
       linkati.push(m[1]);
-      if (!set.has(m[1])) set.set(m[1], categoria);
+      if (!set.has(m[1])) set.set(m[1], categoriaDelSet(m[1], categoria));
     }
     /*
      * ── ANCHE I SET CHE LA PAGINA NON LINKA ───────────────────────────────
