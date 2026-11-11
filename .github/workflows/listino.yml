@@ -84,7 +84,7 @@ jobs:
                   git add -A
                   git commit -q -m "listino $(date -u +%Y-%m-%dT%H:%M:%SZ)"
                   git push -q --force                     "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"                     HEAD:dati
-                ) && { cat listino/stato.json; ultimo="$pubblicato"; ultima_costruzione=$partenza;                        [ -f listino/icon-24h.json ] && cp listino/icon-24h.json icon-24h-prec.json; }                   || echo "pubblicazione fallita, riprovo al prossimo giro"
+                ) && { cat listino/stato.json; ultimo="$pubblicato"; ultima_costruzione=$partenza;                        [ -f listino/promo-24h.json ] && cp listino/promo-24h.json icon-24h-prec.json; }                   || echo "pubblicazione fallita, riprovo al prossimo giro"
               else
                 echo "fut.gg non ha risposto, riprovo al prossimo giro"
               fi
