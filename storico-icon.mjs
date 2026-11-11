@@ -172,7 +172,16 @@ function riassunto(serie) {
   const adesso = serie[serie.length - 1] ?? 0;
   if (punti.length === 0) return [adesso, 0, 0, 0, 0, 0, []];
   const valori = punti.map(([, p]) => p);
-  const media = Math.round(valori.reduce((a, b) => a + b, 0) / valori.length);
+  /*
+   * MEDIANA, non media. SCELTO dall'utente l'11/11/2026: il prezzo piu' basso
+   * in vendita ogni tanto schizza (mercato vuoto per qualche minuto) o crolla
+   * (una carta comprata al volo), e la media se li porta dietro. La mediana e'
+   * il prezzo che sta a meta' di tutte le rilevazioni: i picchi non la
+   * spostano, e non serve scegliere una percentuale da scartare.
+   */
+  const ordinati = [...valori].sort((a, b) => a - b);
+  const meta = Math.floor(ordinati.length / 2);
+  const media = ordinati.length % 2 ? ordinati[meta] : Math.round((ordinati[meta - 1] + ordinati[meta]) / 2);
   /* Il grafico: per ogni mezz'ora l'ultimo prezzo visto, 0 se non c'e'. */
   const fasce = new Array(FASCE).fill(0);
   for (const [quando, p] of punti) {
