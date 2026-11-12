@@ -77,6 +77,8 @@ jobs:
                 node storico-icon.mjs listino icon-24h-prec.json || echo "storico icon saltato"
                 # Lo storico di 7 giorni per MAGOMARKET (carte da 10.250 in su): anche lui a parte.
                 node storico-magomarket.mjs listino . || echo "storico magomarket saltato"
+                # Il catalogo per MAGOMARKET su telefono (iPhone, Android): valutazioni, promo, team.
+                node catalogo-magomarket.mjs listino mm-core.json || echo "catalogo magomarket saltato"
                 (
                   set -e
                   cd listino
