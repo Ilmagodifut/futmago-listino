@@ -75,6 +75,8 @@ jobs:
               if node costruisci-listino.mjs listino; then
                 # Lo storico delle Icon e' un passo a parte: se fallisce, il listino esce lo stesso.
                 node storico-icon.mjs listino icon-24h-prec.json || echo "storico icon saltato"
+                # Lo storico di 7 giorni per MAGOMARKET (carte da 10.250 in su): anche lui a parte.
+                node storico-magomarket.mjs listino . || echo "storico magomarket saltato"
                 (
                   set -e
                   cd listino
@@ -84,7 +86,7 @@ jobs:
                   git add -A
                   git commit -q -m "listino $(date -u +%Y-%m-%dT%H:%M:%SZ)"
                   git push -q --force                     "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"                     HEAD:dati
-                ) && { cat listino/stato.json; ultimo="$pubblicato"; ultima_costruzione=$partenza;                        [ -f listino/promo-24h.json ] && cp listino/promo-24h.json icon-24h-prec.json; }                   || echo "pubblicazione fallita, riprovo al prossimo giro"
+                ) && { cat listino/stato.json; ultimo="$pubblicato"; ultima_costruzione=$partenza;                        [ -f listino/promo-24h.json ] && cp listino/promo-24h.json icon-24h-prec.json; cp listino/storico-7g-*.json . 2>/dev/null || true; }                   || echo "pubblicazione fallita, riprovo al prossimo giro"
               else
                 echo "fut.gg non ha risposto, riprovo al prossimo giro"
               fi
