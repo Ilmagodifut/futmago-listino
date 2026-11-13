@@ -335,6 +335,18 @@ function raritaDelRequisito(t) {
       for (const [n, v] of RARITA_PER_NOME) if (n === radice || n.endsWith(' ' + radice)) id = v;
     }
     if (id !== undefined && !trovate.includes(id)) trovate.push(id);
+    /*
+     * ── E LE PROMO DELLA STESSA FAMIGLIA ──────────────────────────────────
+     *
+     * TROVATO il 13/11/2026 alle 19:12: «Requires Hall of FUT Player Items»
+     * accetta anche le «Hall of FUT: Unleashed» (rarita' 10), che fut.gg
+     * mostra nell'album; qui si prendeva solo «Base Hall of FUT» (9). Le
+     * rarita' che si chiamano «<nome>: qualcosa» sono della stessa famiglia.
+     */
+    const radice = nome.replace(/(es|s)$/, '');
+    for (const [n, v] of RARITA_PER_NOME) {
+      if ((n.startsWith(nome + ':') || n.startsWith(radice + ':')) && !trovate.includes(v)) trovate.push(v);
+    }
   }
   return trovate;
 }
