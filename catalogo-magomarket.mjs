@@ -10,9 +10,13 @@
  * al listino: valutazioni, rarita', nomi e colori delle promo, team.
  *
  *   magomarket-catalogo.json
- *     { v: 1, quando, carte, o: [overall], r: [rarita'],
+ *     { v: 1, quando, carte, o: [overall], r: [rarita'], g: [vendita rapida],
  *       rarita: { eaId: nome }, colori: { eaId: "39ff14" },
  *       squadre: [ { id, name, slug, rarityGroupId, releaseDate, rarityEaIds, highlightedPlayersEaIds } ] }
+ *
+ * `g` (14/11/2026) dice quale gemella e' l'olografica: ha `g` 1,5 volte la
+ * normale (vedi `segnaOlografiche` in apps/magomarket/src/logica/catalogo.ts).
+ * Se `g` manca o non e' allineato si scrive senza: MAGOMARKET usa la riserva.
  *
  * `o` e `r` sono nello STESSO ORDINE di `listino-<piattaforma>.json` (lo
  * stesso indice di fut.gg): se le lunghezze non tornano non si scrive niente.
@@ -76,6 +80,14 @@ if (!Array.isArray(pool.o) || pool.o.length !== carte || !Array.isArray(pool.r) 
 }
 writeFileSync(
   path.join(destinazione, 'magomarket-catalogo.json'),
-  JSON.stringify({ v: 1, quando: new Date().toISOString(), carte, o: pool.o, r: pool.r, ...nucleo }),
+  JSON.stringify({
+    v: 1,
+    quando: new Date().toISOString(),
+    carte,
+    o: pool.o,
+    r: pool.r,
+    ...(Array.isArray(pool.g) && pool.g.length === carte ? { g: pool.g } : {}),
+    ...nucleo,
+  }),
 );
 console.log(`  magomarket catalogo: ${carte} carte, ${Object.keys(nucleo.rarita).length} rarita', ${nucleo.squadre.length} team`);
